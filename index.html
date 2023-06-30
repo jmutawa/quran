@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ar">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        @font-face {
+            font-family: 'Hafs';
+            src: url('hafs.ttf');
+        }
+
+        body {
+            margin: auto;
+            width: 50%;
+            font-family: 'Hafs', sans-serif;
+            font-size: xx-large;
+        }
+
+        .word {
+            border-bottom: 2px lightgrey solid;
+            border-radius: 5px;
+            color: white;
+            /* margin-bottom: 1rem; */
+            padding-bottom: 2px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .word:hover {
+            color: black;
+        }
+
+        .selected {
+            color: black;
+            border-bottom: none;
+        }
+    </style>
+</head>
+
+<body dir="rtl">
+<h1></h1>
+<label for="select">السورة</label>
+<select id="select">
+    <option label="اختر سورة"></option>
+</select>
+
+<label for="from">من</label>
+<select id="from"></select>
+
+<label for="to">إلى</label>
+<select id="to"></select>
+
+<label style="margin-right: 5rem" for="full">الكل</label>
+<input type="radio" id="full" name="show" onchange="handleRadioChange()"/>
+<label for="first">الأولى</label>
+<input type="radio" id="first" name="show" onchange="handleRadioChange()"/>
+<label for="none">بدون</label>
+<input type="radio" id="none" name="show" checked onchange="handleRadioChange()"/>
+
+<div id="content"></div>
+
+<script>
+    function handleRadioChange() {
+        displayAyas(selectedSura, from.value, to.value)
+    }
+
+    let data = [];
+    let selectedSura = 0;
+
+    async function getData() {
+        const res = await fetch('data.json');
+        data = await res.json();
+        const select = document.getElementById('select');
+
+        const content = document.getElementById('content');
+        const from = document.getElementById("from");
+        const to = document.getElementById("to");
+
+        let lastSura = 0;
+        //const t0 = performance.now();
+
+        data.forEach(aya => {
+            if (aya.sura_no > lastSura) {
+                let option = document.createElement('option');
+                option.label = aya.sura_name_ar;
+                option.value = aya.sura_no;
+                select.appendChild(option);
+
+                lastSura++;
+            }
+        });
+
+        select.addEventListener('change', (event) => {
+            selectedSura = Number(event.target.value);
+            const sura = data.filter(aya => aya.sura_no === selectedSura);
+
+            from.innerHTML = "";
+
+            to.innerHTML = "";
+
+            const max = sura.length;
+
+            for (i = 1; i <= max; i++) {
+                const fopt = document.createElement("option");
+                fopt.value = i;
+                fopt.innerHTML = i;
+                from.appendChild(fopt);
+
+                const topt = document.createElement("option");
+                topt.value = i;
+                topt.innerHTML = i;
+                to.appendChild(topt);
+            }
+
+            to.value = max;
+
+            displayAyas(selectedSura, 1, max);
+
+
+        });
+
+        from.addEventListener('change', (event) => {
+            const min = Number(event.target.value);
+            content.innerHTML = "";
+
+            displayAyas(selectedSura, min, to.value);
+        });
+
+        to.addEventListener('change', (event) => {
+            const max = Number(event.target.value);
+            content.innerHTML = "";
+            displayAyas(selectedSura, from.value, max);
+        });
+
+    }
+
+    function displayAyas(id, from, to) {
+        content.innerHTML = "";
+        const type = document.querySelector('input[name="show"]:checked').id;
+        const ayas = data.filter(aya => aya.sura_no === id && aya.aya_no >= from && aya.aya_no <= to);
+        ayas.forEach(aya => {
+            let words = aya.aya_text.split(/\s/);
+            for (i = 0; i < words.length; i++) {
+                const p = document.createElement('span');
+                if (i !== words.length - 1) {
+                    p.classList.add("word");
+
+                    // if (type == 'full' || (type == 'first' && i == 0)) {
+                    //     p.classList.add("selected");
+                    // } else {
+                    //     p.addEventListener("click", (event) => {
+                    //         event.target.classList.toggle("selected");
+                    //     });
+                    // }
+
+                    if (type === 'full') {
+                        p.classList.add("selected");
+                    } else {
+                        if (type === 'first') {
+                            if (i === 0) {
+                                p.classList.add("selected");
+                            }
+                            if (i === 1 && words[0] === '۞') {
+                                p.classList.add("selected");
+                            }
+                        }
+                    }
+                }
+                p.innerHTML = words[i];
+                content.appendChild(p);
+                content.append(' ');
+            }
+            content.appendChild(document.createElement('br'));
+        });
+        content.appendChild(document.createElement('br'));
+    }
+
+    getData();
+
+</script>
+</body>
+
+</html>
